@@ -79,6 +79,20 @@ public class RgbColor {
     }
 
     /**
+     * reads given string - tries at first rgb and afterwards hex
+     *
+     * @param rgbOrHex rgb or hex
+     * @return RgbColor or null when not valid format
+     */
+    public static RgbColor readRgbOrHex(String rgbOrHex) {
+        RgbColor result = readRgb(rgbOrHex);
+        if (result != null) {
+            return result;
+        }
+        return hex2rgb(rgbOrHex);
+    }
+
+    /**
      * @return hexCode of color without leading # for example ffffff
      */
     public String getHexCode() {
@@ -112,7 +126,5 @@ public class RgbColor {
         // double a = 1 - ((0.00299 * (double) r) + (0.00587 * (double) g) + (0.00114 * (double) b));
         // return a < 0.5 ? true : false;
     }
-    // 11158579
-    // 11184810
 
 }
