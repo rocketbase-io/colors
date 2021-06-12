@@ -125,6 +125,11 @@ public class RgbColor {
         return (Integer.valueOf(getHexCode(), 16) > 0xffffff / 1.5) ? true : false;
     }
 
+    /**
+     * different algorithm to calculate text color for background-color
+     *
+     * @return true text should be black - otherweise white
+     */
     public boolean isBlackContrastingColor2() {
         double rd = gammaCorrect(r);
         double gd = gammaCorrect(g);

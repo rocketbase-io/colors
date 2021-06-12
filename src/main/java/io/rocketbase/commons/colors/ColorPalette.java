@@ -1,6 +1,6 @@
 package io.rocketbase.commons.colors;
 
-^import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
@@ -137,10 +137,21 @@ public enum ColorPalette {
         return hex2rgb(this.getHexCode());
     }
 
+    /**
+     * primar algorithm to calculate text color for background-color
+     *
+     * @return true text should be black - otherweise white
+     */
     public boolean isBlackContrastingColor() {
         return this.getRgbColor().isBlackContrastingColor();
     }
 
+
+    /**
+     * different algorithm to calculate text color for background-color
+     *
+     * @return true text should be black - otherweise white
+     */
     public boolean isBlackContrastingColor2() {
         return this.getRgbColor().isBlackContrastingColor2();
     }
