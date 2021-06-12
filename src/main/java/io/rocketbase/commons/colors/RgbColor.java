@@ -123,8 +123,28 @@ public class RgbColor {
      */
     public boolean isBlackContrastingColor() {
         return (Integer.valueOf(getHexCode(), 16) > 0xffffff / 1.5) ? true : false;
-        // double a = 1 - ((0.00299 * (double) r) + (0.00587 * (double) g) + (0.00114 * (double) b));
-        // return a < 0.5 ? true : false;
+    }
+
+    public boolean isBlackContrastingColor2() {
+        double rd = gammaCorrect(r);
+        double gd = gammaCorrect(g);
+        double bd = gammaCorrect(b);
+        double luminance = 0.2126 * rd + 0.7152 * gd + 0.0722 * bd;
+        if (luminance > 0.179) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private double gammaCorrect(int value) {
+        double c = value / 255.0;
+        if (c <= 0.03928) {
+            c = c / 12.92;
+        } else {
+            c = Math.pow(((c + 0.055) / 1.055), 2.4);
+        }
+        return c;
     }
 
 }

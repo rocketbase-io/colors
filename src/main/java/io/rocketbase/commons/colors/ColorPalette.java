@@ -1,5 +1,7 @@
 package io.rocketbase.commons.colors;
 
+^import com.fasterxml.jackson.annotation.JsonValue;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 import java.util.*;
@@ -7,10 +9,11 @@ import java.util.*;
 import static io.rocketbase.commons.colors.RgbColor.hex2rgb;
 
 /**
- * holds a list of colors<br>
+ * holds a list of color presets<br>
  * provides a function to transform from hex-color to rgb-color<br>
  * furthermore it allows to find a nearest fitting color to given hex-code
  */
+@Schema(description = "holds a list of color presets", enumAsRef = true)
 public enum ColorPalette {
 
     BRICK("a54e3c"),
@@ -81,6 +84,11 @@ public enum ColorPalette {
     @Getter
     private String hexCode;
 
+    @JsonValue
+    public String getValue() {
+        return name().toLowerCase().replace("_", "-");
+    }
+
     ColorPalette(String hexCode) {
         this.hexCode = hexCode;
     }
@@ -131,6 +139,10 @@ public enum ColorPalette {
 
     public boolean isBlackContrastingColor() {
         return this.getRgbColor().isBlackContrastingColor();
+    }
+
+    public boolean isBlackContrastingColor2() {
+        return this.getRgbColor().isBlackContrastingColor2();
     }
 
 }
