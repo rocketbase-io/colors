@@ -1,0 +1,130 @@
+---
+title: Color spaces
+description: Reading hex, rgb(), hsl() and oklch() notations and converting between RgbColor, HslColor, OklabColor and OklchColor.
+sidebar:
+  order: 2
+---
+
+Four value types cover the spaces the library works in. `RgbColor` is the hub — every other type
+converts to and from it, and the parsers all hand one back.
+
+| Type | Channels | CSS notation |
+| ----------- | ----------------------------- | ---------------------------- |
+| `RgbColor` | `r`, `g`, `b` — 0 to 255 | `#a54e3c`, `rgb(165, 78, 60)` |
+| `HslColor` | `h` 0–360, `s` and `l` 0–1 | `hsl(10.286, 46.667%, 44.118%)` |
+| `OklchColor` | `l` 0–1, `c` chroma, `h` 0–360 | `oklch(52.951% 0.119 33.116)` |
+| `OklabColor` | `l` 0–1, `a`, `b` | `oklab(52.951% 0.1 0.065)` |
+
+All four are immutable, carry `equals`/`hashCode` on their channels, and render their CSS notation
+from `toString()`.
+
+## Reading a color
+
+`RgbColor.readColor()` is the one to reach for when the input could be anything:
+
+```java
+RgbColor.readColor("#a54e3c");             // long hex
+RgbColor.readColor("a54e3c");              // …with or without the hash
+RgbColor.readColor("#abc");                // short hex, expanded to #aabbcc
+RgbColor.readColor("rgb(165, 78, 60)");
+RgbColor.readColor("hsl(10.286, 46.667%, 44.118%)");
+RgbColor.readColor("hsl(10.286 46.667% 44.118%)");   // css color 4, space separated
+RgbColor.readColor("oklch(52.951% 0.119 33.116)");
+RgbColor.readColor("oklch(0.52951 0.119 33.116)");   // lightness as a fraction
+RgbColor.readColor("oklch(50% 0 none)");             // achromatic, hue omitted
+```
+
+It tries hsl first, then oklch, then rgb and hex. Anything it cannot make sense of comes back as
+`null`.
+
+The narrower parsers are there when you know what you are dealing with, and when accepting more than
+that would be a bug:
+
+```java
+RgbColor.hex2rgb("#a54e3c");         // hex only
+RgbColor.readRgb("rgb(165, 78, 60)"); // rgb() only
+RgbColor.readRgbOrHex("a54e3c");      // rgb() first, hex as fallback
+HslColor.readHsl("hsl(210, 50%, 40%)");
+OklchColor.readOklch("oklch(63.7% 0.237 25.331)");
+```
+
+Every one of them returns `null` on input it cannot parse. Nothing throws.
+
+:::caution[1.0.0 changed hex parsing]
+Before 1.0.0 the six-digit branch of `hex2rgb` read a single character per channel and multiplied it
+by 17, so only codes made of repeating pairs such as `#ffffff` came out right. `#123456` returned
+(17, 51, 85). Since every palette entry is a six-digit code, this affected `getNearest()` and both
+contrast algorithms as well — results shift after upgrading.
+:::
+
+## Converting
+
+```java
+RgbColor rgb = RgbColor.hex2rgb("#a54e3c");
+
+HslColor hsl     = rgb.toHsl();
+OklabColor oklab = rgb.toOklab();
+OklchColor oklch = rgb.toOklch();
+
+RgbColor backFromHsl   = hsl.toRgb();
+RgbColor backFromOklch = oklch.toRgb();
+OklabColor cartesian   = oklch.toOklab();
+OklchColor polar       = oklab.toOklch();
+```
+
+The oklab math follows [Björn Ottosson's reference
+implementation](https://bottosson.github.io/posts/oklab/), which is also what CSS Color 4 specifies,
+so the numbers agree with what a browser computes for the same color.
+
+## Getting the string back out
+
+```java
+RgbColor rgb = RgbColor.readColor("oklch(63.7% 0.237 25.331)");
+
+rgb.getHexCode();                 // fb2c36
+rgb.getHexCodeWithLeadingHash();  // #fb2c36
+rgb.toHsl().getHslCode();         // hsl(357.101, 96.279%, 57.843%)
+rgb.toOklch().getOklchCode();     // oklch(63.782% 0.237 25.436)
+```
+
+Single-digit channels are zero-padded, so `new RgbColor(5, 10, 15).getHexCode()` gives `050a0f` and
+hex codes round-trip. (Up to 0.6.x it produced `55aaff`.)
+
+## Lighter, darker, more or less saturated
+
+`HslColor` and `OklchColor` both take an amount between 0 and 1 and clamp the result to the valid
+range:
+
+```java
+HslColor base = RgbColor.hex2rgb("#337b8d").toHsl();
+base.lighten(0.15);
+base.darken(0.15);
+base.saturate(0.2);
+base.desaturate(0.2);
+
+OklchColor perceptual = RgbColor.hex2rgb("#337b8d").toOklch();
+perceptual.lighten(0.15);
+perceptual.darken(0.15);
+```
+
+Lightening in hsl and lightening in oklch give different results, and the oklch one is usually the
+one you want. HSL lightness is a formula over the rgb channels, so `hsl(60, 100%, 50%)` (yellow) and
+`hsl(240, 100%, 50%)` (blue) claim the same lightness while one of them is blinding and the other
+nearly black. OKLCH lightness tracks what the eye reports, which is why a scale built by stepping
+`l` reads as evenly spaced.
+
+## Staying inside sRGB
+
+An oklch color can name a combination of lightness and chroma that no sRGB display can produce.
+`isInSrgbGamut()` tells you before you convert:
+
+```java
+OklchColor vivid = OklchColor.readOklch("oklch(70% 0.35 150)");
+vivid.isInSrgbGamut(); // false — too saturated for sRGB
+
+vivid.toRgb().getHexCodeWithLeadingHash(); // #00d100, clipped per channel
+```
+
+`toRgb()` clips each channel into range independently, matching what browsers do and what produced
+the hex values Tailwind publishes next to its oklch definitions. Clipping moves the color, so check
+the gamut first if the shift would matter.

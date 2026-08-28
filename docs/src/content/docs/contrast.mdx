@@ -1,0 +1,94 @@
+---
+title: Contrast
+description: Choosing black or white text for a background color — the two algorithms of isBlackContrastingColor and isBlackContrastingColor2, and where they disagree.
+sidebar:
+  order: 3
+---
+
+import ContrastCompare from '../../components/ContrastCompare.astro';
+import { tailwind } from '../../data/tailwind.js';
+import { rocketbase } from '../../data/rocketbase.js';
+
+You have a background color and need a text color that stays readable on it. Every `RgbColor` and
+every palette entry answers that with a boolean:
+
+```java
+RgbColor bg = RgbColor.readColor("#2b7fff");
+String text = bg.isBlackContrastingColor() ? "#000000" : "#ffffff";
+```
+
+`true` means black text, `false` means white. The same method sits on `ColorCode`, so it works
+directly on a palette value:
+
+```java
+TailwindPalette.BLUE.base().isBlackContrastingColor();
+ColorPalette.SUNSHINE.isBlackContrastingColor();
+```
+
+Every swatch in these docs draws its label with the color `isBlackContrastingColor()` returns, which
+is why the pages are also a full test sheet for the method.
+
+## Two algorithms
+
+`isBlackContrastingColor()` reads the six hex digits as one integer and compares it against two
+thirds of white:
+
+```java
+Integer.valueOf(getHexCode(), 16) > 0xffffff / 1.5
+```
+
+Because red occupies the top two hex digits, it dominates the comparison: red weighs 65 536 times as
+much as blue. Anything with a strong red channel is called light early, anything blue-dominant stays
+dark far longer than it looks. It is cheap and it has been in the library since 0.5.0.
+
+`isBlackContrastingColor2()` computes relative luminance the way WCAG defines it — gamma-expand each
+channel, weight them 0.2126 / 0.7152 / 0.0722, compare against the 0.179 threshold that sits at the
+crossover between a 4.5:1 contrast against black and against white:
+
+```java
+double luminance = 0.2126 * gamma(r) + 0.7152 * gamma(g) + 0.0722 * gamma(b);
+return luminance > 0.179;
+```
+
+Green carries most of the weight there, which matches how the eye works. For anything user-facing
+this is the method to use. The first one is kept because changing it would silently redraw every UI
+that already relies on it.
+
+## Where they disagree
+
+Across the 480 colors of the three bundled palettes the two methods disagree on 108 — 49 in
+Tailwind, 44 in Open Color, 15 in `ColorPalette`. The pattern is consistent: saturated greens,
+teals and blues, which the hex-integer test calls dark and luminance calls light, plus deep reds and
+magentas the other way around.
+
+<ContrastCompare
+	colors={[
+		tailwind.find((f) => f.family === 'blue').shades.find((s) => s.step === 500),
+		tailwind.find((f) => f.family === 'green').shades.find((s) => s.step === 400),
+		tailwind.find((f) => f.family === 'red').shades.find((s) => s.step === 600),
+		tailwind.find((f) => f.family === 'cyan').shades.find((s) => s.step === 300),
+		rocketbase.find((c) => c.constant === 'POOL'),
+		rocketbase.find((c) => c.constant === 'RASBERRY'),
+	]}
+/>
+
+Read the tiles above and the second column wins nearly every time. `cyan-300` (`#53eafd`) is a light
+color by any measure, yet the hex-integer test puts white text on it.
+
+## Building a badge
+
+```java
+public String badge(String label, String backgroundColor) {
+    RgbColor background = RgbColor.readColor(backgroundColor);
+    if (background == null) {
+        background = RgbColor.hex2rgb("f1f5f9");
+    }
+    String text = background.isBlackContrastingColor2() ? "#000000" : "#ffffff";
+    return String.format("<span style=\"background:%s;color:%s\">%s</span>",
+            background.getHexCodeWithLeadingHash(), text, label);
+}
+```
+
+Two details worth keeping: parse defensively, since `readColor` returns `null` for junk, and render
+the background from the parsed color rather than the raw input, so `rgb(43, 127, 255)` and `2b7fff`
+end up producing the same markup.

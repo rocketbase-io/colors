@@ -1,0 +1,132 @@
+---
+title: Getting Started
+description: Install io.rocketbase.commons:colors and read, convert and match colors in a few lines of Java.
+sidebar:
+  order: 1
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+`colors` is a small Java library for the color work that shows up in every application that lets
+users pick a color: parsing whatever notation arrived, converting between color spaces, deciding
+whether black or white text stays readable on top, and mapping a free-form value onto one of a
+handful of named colors you actually support.
+
+## Requirements
+
+Java 11 or newer. Lombok, `jackson-annotations` and `swagger-annotations` are declared as `provided`
+— they are used at compile time for the getters, the `@JsonValue` serialization of the palette enums
+and the OpenAPI schema, and none of them has to be on your runtime classpath.
+
+## Installation
+
+<Tabs syncKey="buildtool">
+	<TabItem label="Maven">
+		```xml
+		<dependency>
+			<groupId>io.rocketbase.commons</groupId>
+			<artifactId>colors</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+		```
+	</TabItem>
+	<TabItem label="Gradle">
+		```kotlin
+		implementation("io.rocketbase.commons:colors:1.0.0")
+		```
+	</TabItem>
+</Tabs>
+
+## The first few lines
+
+```java
+import io.rocketbase.commons.colors.*;
+
+// read whatever notation you got
+RgbColor brand = RgbColor.readColor("#a54e3c");
+RgbColor same  = RgbColor.readColor("rgb(165, 78, 60)");
+RgbColor still = RgbColor.readColor("oklch(52.951% 0.119 33.116)");
+
+// convert
+HslColor hsl = brand.toHsl();       // hsl(10.286, 46.667%, 44.118%)
+OklchColor oklch = brand.toOklch(); // oklch(52.951% 0.119 33.116)
+
+// pick the text color for a badge with that background
+String textColor = brand.isBlackContrastingColor() ? "#000" : "#fff"; // #fff
+
+// map it onto a palette you support
+TailwindShade tailwind = TailwindPalette.getNearest("#a54e3c"); // amber-700
+ColorPalette rocketbase = ColorPalette.getNearest("#a54e3c"); // BRICK
+```
+
+Every parser returns `null` for input it cannot read, so `readColor("chartreuse")` gives you `null`
+rather than an exception.
+
+## What is in the box
+
+`RgbColor`, `HslColor`, `OklchColor` and `OklabColor` are immutable value types with `equals` and
+`hashCode` on their channels. They convert into each other in every direction, and each one renders
+back into its CSS notation via `toString()`.
+
+Three palettes ship with the library. [`ColorPalette`](/palettes/color-palette/) is the original
+rocketbase set of 64 named colors, a flat enum without shade structure.
+[`TailwindPalette`](/palettes/tailwind/) carries the 26 families of Tailwind CSS v4 with 11 shades
+each, stored in the oklch values Tailwind defines them in.
+[`OpenColorPalette`](/palettes/open-color/) has the 13 families of Open Color with 10 shades.
+
+All three implement or expose [`ColorCode`](#the-colorcode-interface), which is what makes a lookup
+like `ColorCode.getNearest(candidates, "#a54e3c")` work regardless of which palette the candidates
+came from.
+
+## The ColorCode interface
+
+A palette entry only has to answer one question — what is your hex code. Everything else follows
+from that as a default method:
+
+```java
+public interface ColorCode {
+    String getHexCode();
+
+    default String getHexCodeWithLeadingHash() { … }
+    default RgbColor getRgbColor()             { … }
+    default HslColor getHslColor()             { … }
+    default OklchColor getOklchColor()         { … }
+    default boolean isBlackContrastingColor()  { … }
+    default boolean isBlackContrastingColor2() { … }
+
+    static <T extends ColorCode> T getNearest(Collection<T> candidates, String colorCode) { … }
+}
+```
+
+Implement it on your own enum of brand colors and the nearest-color lookup, the conversions and both
+contrast algorithms come along for free:
+
+```java
+public enum BrandColor implements ColorCode {
+    PRIMARY("a54e3c"),
+    SECONDARY("337b8d"),
+    INK("221f20");
+
+    private final String hexCode;
+
+    BrandColor(String hexCode) { this.hexCode = hexCode; }
+
+    @Override
+    public String getHexCode() { return hexCode; }
+}
+
+BrandColor closest = ColorCode.getNearest(Arrays.asList(BrandColor.values()), "#0f766e");
+// SECONDARY
+```
+
+## Where to go next
+
+Reading and converting between the four color spaces is covered in
+[Color spaces](/color-spaces/). The two ways of choosing a text color, and when they disagree, in
+[Contrast](/contrast/). Nearest-color matching and random color generation in
+[Nearest & random](/nearest-and-random/).
+
+## License
+
+The library is MIT licensed. The Tailwind color values are MIT licensed by Tailwind Labs, the Open
+Color values MIT licensed by heeyeun — see the respective palette pages.

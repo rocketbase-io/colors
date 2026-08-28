@@ -1,0 +1,57 @@
+---
+title: Open Color palette
+description: All 130 colors of OpenColorPalette — 13 families with 10 shades each, from the Open Color scheme by heeyeun.
+---
+
+import PaletteGrid from '../../../components/PaletteGrid.astro';
+import { openColor } from '../../../data/open-color.js';
+
+[Open Color](https://yeun.github.io/open-color/) is an older open-source scheme, and a smaller one:
+13 families of 10 shades, 130 colors. It was designed with the shades tuned by hand rather than
+generated from a formula, which shows in the mid range — Open Color's `blue-5` and `cyan-5` read as
+clearly distinct hues where a generated scale tends to blur them.
+
+`OpenColorPalette` mirrors `TailwindPalette` method for method. The shades are numbered 0 to 9, mapped
+onto the same `Shade` enum, so `Shade.S50` is step 0 and `Shade.S900` is step 9. `Shade.S950` has no
+Open Color counterpart and returns `null` from `getOpenColorStep()`.
+
+```java
+OpenColorPalette.BLUE.shade(Shade.S500).getHexCode(); // 339af0
+OpenColorPalette.BLUE.shade(5);                       // same, by open color step
+OpenColorPalette.BLUE.base();                         // blue-5
+OpenColorPalette.BLUE.allShades();                    // 10, light to dark
+
+OpenColorShade shade = OpenColorPalette.TEAL.shade(6);
+shade.getValue();                   // teal-6
+shade.getHexCodeWithLeadingHash();  // #12b886
+shade.getHslColor().getHslCode();
+shade.isBlackContrastingColor2();   // true → black text
+```
+
+Because both palettes implement `ColorCode`, a nearest-color lookup can span them:
+
+```java
+List<ColorCode> pool = new ArrayList<>();
+pool.addAll(TailwindPalette.all());
+pool.addAll(OpenColorPalette.all());
+
+ColorCode closest = ColorCode.getNearest(pool, "#3b82f6");
+```
+
+## Across the whole palette
+
+```java
+List<OpenColorShade> all = OpenColorPalette.all();               // 130
+OpenColorShade nearest = OpenColorPalette.getNearest("#3b82f6"); // indigo-5
+OpenColorShade accent = OpenColorPalette.randomShade(Shade.mids());
+```
+
+## The colors
+
+Labels are drawn with `isBlackContrastingColor2()`.
+
+<PaletteGrid families={openColor} columns={10} />
+
+## License
+
+Colors by [heeyeun](https://github.com/yeun/open-color), MIT licensed.

@@ -1,0 +1,61 @@
+---
+title: Tailwind palette
+description: All 286 colors of TailwindPalette — 26 families with 11 shades each, stored in the oklch values Tailwind defines them in.
+---
+
+import PaletteGrid from '../../../components/PaletteGrid.astro';
+import { tailwind } from '../../../data/tailwind.js';
+
+`TailwindPalette` carries the default palette of Tailwind CSS v4.3.3: 26 families with 11 shades each,
+286 colors in total. Alongside the long-standing families sit `MAUVE`, `MIST`, `OLIVE` and `TAUPE` —
+four warm and cool neutrals Tailwind added to its theme, easy to miss in older colour references.
+
+Tailwind defines these colors in oklch, so that is what the enum stores. Hex is derived on demand,
+clipping to the sRGB gamut per channel the way browsers do, which reproduces the hex values Tailwind
+publishes exactly.
+
+```java
+TailwindPalette.EMERALD.shade(600).getHexCode();  // 009966
+TailwindPalette.EMERALD.shade(Shade.S600);        // same, typed
+TailwindPalette.EMERALD.base();                   // emerald-500
+TailwindPalette.EMERALD.allShades();              // 11, light to dark
+
+TailwindShade shade = TailwindPalette.BLUE.shade(500);
+shade.getValue();                    // blue-500
+shade.getHexCodeWithLeadingHash();   // #2b7fff
+shade.getOklchColor().getOklchCode();// oklch(62.3% 0.214 259.815)
+shade.getFamily();                   // TailwindPalette.BLUE
+shade.getShade();                    // Shade.S500
+shade.toString();                    // blue-500 #2b7fff
+```
+
+`getOklchColor()` on a `TailwindShade` returns the source value Tailwind ships, rather than
+recomputing it from the derived hex — the two differ in the last digits, and for anything emitted
+into CSS the original is the one you want.
+
+## Across the whole palette
+
+```java
+List<TailwindShade> all = TailwindPalette.all();                   // 286
+TailwindShade nearest = TailwindPalette.getNearest("#3b82f6");     // blue-500
+TailwindShade darkOnly = TailwindPalette.getNearest(Shade.darks(), "#3b82f6");
+TailwindPalette family = TailwindPalette.randomFamily();
+TailwindShade accent = TailwindPalette.randomShade(Shade.mids());
+```
+
+More on matching and random selection in [Nearest & random](/nearest-and-random/).
+
+## The colors
+
+Each tile shows the Tailwind class name, the derived hex code and the oklch source value. The label
+is drawn in the color `isBlackContrastingColor2()` returns for that background — the luminance
+variant, which keeps every tile here above the WCAG AA threshold. The older
+`isBlackContrastingColor()` would misjudge the saturated greens, teals and blues, as
+[Contrast](/contrast/) works through.
+
+<PaletteGrid families={tailwind} columns={11} showOklch />
+
+## License
+
+Colors by [Tailwind Labs](https://tailwindcss.com/docs/colors), MIT licensed. The four extra
+neutrals were added to match, and are covered by the library's own MIT license.

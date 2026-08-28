@@ -1,0 +1,73 @@
+---
+// side-by-side rendering of both contrast algorithms for a handful of colors
+interface Props {
+	colors: { name: string; hex: string; black: boolean; black2: boolean }[];
+}
+
+const { colors } = Astro.props;
+---
+
+<div class="compare">
+	{
+		colors.map((color) => (
+			<div class="pair">
+				<div class="label">
+					{color.name} <span class="hexlabel">#{color.hex}</span>
+				</div>
+				<div class="tiles">
+					<div
+						class="tile"
+						style={`background:#${color.hex}; color:${color.black ? '#000' : '#fff'}`}
+					>
+						<span class="algo">isBlackContrastingColor</span>
+						<span class="verdict">{color.black ? 'black' : 'white'}</span>
+					</div>
+					<div
+						class="tile"
+						style={`background:#${color.hex}; color:${color.black2 ? '#000' : '#fff'}`}
+					>
+						<span class="algo">isBlackContrastingColor2</span>
+						<span class="verdict">{color.black2 ? 'black' : 'white'}</span>
+					</div>
+				</div>
+			</div>
+		))
+	}
+</div>
+
+<style>
+	.compare {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+		gap: 0.9rem;
+		margin-top: 1.5rem;
+	}
+	.label {
+		font-family: var(--sl-font-mono);
+		font-size: 0.75rem;
+		margin-bottom: 0.25rem;
+	}
+	.hexlabel {
+		color: var(--sl-color-gray-3);
+	}
+	.tiles {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.2rem;
+	}
+	.tile {
+		padding: 0.5rem;
+		border-radius: 0.3rem;
+		min-height: 4rem;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		font-family: var(--sl-font-mono);
+		font-size: 0.62rem;
+		overflow-wrap: anywhere;
+	}
+	.verdict {
+		font-weight: 700;
+		font-size: 0.75rem;
+	}
+</style>

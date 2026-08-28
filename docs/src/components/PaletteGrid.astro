@@ -1,0 +1,62 @@
+---
+import Swatch from './Swatch.astro';
+
+// renders one family per row, shades left to right from lightest to darkest
+interface Family {
+	family: string;
+	shades: { name: string; hex: string; black: boolean; black2: boolean; oklch?: string }[];
+}
+
+interface Props {
+	families: Family[];
+	columns: number;
+	showOklch?: boolean;
+}
+
+const { families, columns, showOklch = false } = Astro.props;
+---
+
+<div class="palette" style={`--columns: ${columns}`}>
+	{
+		families.map((family) => (
+			<section class="family">
+				<h3 id={family.family}>{family.family}</h3>
+				<div class="row">
+					{family.shades.map((shade) => (
+						<Swatch
+							name={shade.name}
+							hex={shade.hex}
+							black={shade.black2}
+							oklch={showOklch ? shade.oklch : undefined}
+							compact={!showOklch}
+						/>
+					))}
+				</div>
+			</section>
+		))
+	}
+</div>
+
+<style>
+	.palette {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+		margin-top: 1.5rem;
+	}
+	.family h3 {
+		margin: 0 0 0.4rem;
+		font-size: var(--sl-text-base);
+		text-transform: capitalize;
+	}
+	.row {
+		display: grid;
+		grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+		gap: 0.3rem;
+	}
+	@media (max-width: 60rem) {
+		.row {
+			grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+		}
+	}
+</style>

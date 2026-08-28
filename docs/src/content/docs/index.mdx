@@ -1,0 +1,73 @@
+---
+title: colors
+description: Java color library — named palettes (rocketbase, Tailwind, Open Color) plus helpers for hex, rgb, hsl, oklab and oklch.
+template: splash
+hero:
+  tagline: Parse a color in whatever notation you got it, convert it between rgb, hsl and oklch, pick the text color that stays readable on top of it, and snap it to the nearest entry of a named palette.
+  actions:
+    - text: Get started
+      link: /getting-started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/rocketbase-io/colors
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<div class="badges">
+	<a href="https://mvnrepository.com/artifact/io.rocketbase.commons/colors">
+		<img
+			src="https://badgen.net/maven/v/maven-central/io.rocketbase.commons/colors"
+			alt="Maven Central"
+		/>
+	</a>
+	<a href="https://github.com/rocketbase-io/colors/actions/workflows/ci.yml">
+		<img
+			src="https://github.com/rocketbase-io/colors/actions/workflows/ci.yml/badge.svg"
+			alt="build status"
+		/>
+	</a>
+</div>
+
+<CardGrid stagger>
+	<Card title="Read any notation" icon="magnifier">
+		`RgbColor.readColor()` takes `#a54e3c`, `#abc`, `rgb(165, 78, 60)`, `hsl(12, 47%, 44%)` or
+		`oklch(55.7% 0.108 34.7)` and hands back an `RgbColor`. Invalid input returns `null` instead of
+		throwing.
+
+		<a class="card-link" href="/color-spaces/">Convert between spaces →</a>
+	</Card>
+	<Card title="Readable text on any background" icon="pencil">
+		Two contrast algorithms decide whether black or white text belongs on a given background — a
+		hex-value threshold and a WCAG relative-luminance one. The swatches in these docs are colored
+		by the first.
+
+		<a class="card-link" href="/contrast/">Compare both algorithms →</a>
+	</Card>
+	<Card title="Three named palettes" icon="seti:pipeline">
+		The 64 colors of `ColorPalette`, the 286 of Tailwind CSS v4 and the 130 of Open Color — all behind one
+		`ColorCode` interface, so nearest-color lookups work across all of them.
+
+		<a class="card-link" href="/palettes/tailwind/">Browse the palettes →</a>
+	</Card>
+	<Card title="Perceptual nearest color" icon="approve-check">
+		`getNearest()` measures distance in OKLAB, where a step of the same size looks like the same
+		step to the eye. `#3b82f6` maps to `blue-500`, not to whatever happens to be close in rgb.
+
+		<a class="card-link" href="/nearest-and-random/">See how it picks →</a>
+	</Card>
+	<Card title="Shades as a first-class concept" icon="setting">
+		`Shade` maps the Tailwind steps 50–950 and the Open Color steps 0–9 onto one scale. Ask for
+		`Shade.mids()` and you get accent-strength colors from either palette.
+
+		<a class="card-link" href="/nearest-and-random/#random-colors">Generate random colors →</a>
+	</Card>
+	<Card title="Small" icon="rocket">
+		Java 11, Lombok at compile time, Jackson and swagger-annotations as optional extras. Nothing
+		else on the classpath at runtime.
+
+		<a class="card-link" href="/getting-started/">Install in one line →</a>
+	</Card>
+</CardGrid>

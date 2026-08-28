@@ -1,0 +1,23 @@
+---
+import Swatch from './Swatch.astro';
+
+// flat palettes without shade families — every color side by side
+interface Props {
+	colors: { name: string; hex: string; black: boolean; black2: boolean }[];
+}
+
+const { colors } = Astro.props;
+---
+
+<div class="flat">
+	{colors.map((color) => <Swatch name={color.name} hex={color.hex} black={color.black2} />)}
+</div>
+
+<style>
+	.flat {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+		gap: 0.35rem;
+		margin-top: 1.5rem;
+	}
+</style>

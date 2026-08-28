@@ -1,0 +1,146 @@
+---
+title: Nearest & random
+description: Snapping a free-form color onto a named palette via OKLAB distance, and generating random colors restricted to a shade range.
+sidebar:
+  order: 4
+---
+
+Two jobs that keep coming back: a user hands you an arbitrary color and your design system only
+supports a fixed set, or you need a color for something that has none yet — an avatar, a tag, a
+chart series.
+
+## Nearest palette color
+
+Every palette has a `getNearest()` that takes any supported notation:
+
+```java
+TailwindShade tw = TailwindPalette.getNearest("#3b82f6");     // blue-500
+OpenColorShade oc = OpenColorPalette.getNearest("#3b82f6");   // indigo-5
+ColorPalette rb = ColorPalette.getNearest("#3b82f6");       // COBALT
+```
+
+All three route through `ColorCode.getNearest()`, which measures distance in OKLAB:
+
+```java
+OklabColor reference = given.toOklab();
+return candidates.stream()
+        .min(Comparator.comparingDouble(c -> reference.distance(c.getRgbColor().toOklab())))
+        .orElse(null);
+```
+
+OKLAB is what makes the answer trustworthy. A euclidean distance over rgb channels treats a step in
+blue and a step in green as equally large, which they are not — the eye is roughly ten times more
+sensitive to green. Matching in rgb therefore prefers colors that are numerically close and visibly
+wrong. In OKLAB the same numeric distance means the same perceived difference in every direction, so
+the closest number really is the closest-looking color.
+
+You can measure directly, too:
+
+```java
+double d = RgbColor.hex2rgb("#3b82f6").distance(RgbColor.hex2rgb("#2b7fff"));
+```
+
+Values below roughly 0.02 are hard to tell apart side by side; above 0.1 the two colors read as
+different colors.
+
+:::note[ColorPalette results shifted in 1.0.0]
+`ColorPalette.getNearest()` compared rgb channels directly up to 0.6.x. It now matches in OKLAB like
+the rest, so a few inputs resolve to a different constant than before.
+:::
+
+### Restricting the search
+
+Sometimes only part of the palette is acceptable — say the darker shades, because the result has to
+carry white text:
+
+```java
+TailwindShade dark = TailwindPalette.getNearest(Shade.darks(), "#3b82f6");
+```
+
+And with a set of your own colors:
+
+```java
+List<TailwindShade> allowed = Arrays.asList(
+        TailwindPalette.BLUE.shade(500),
+        TailwindPalette.EMERALD.shade(500),
+        TailwindPalette.AMBER.shade(500),
+        TailwindPalette.ROSE.shade(500));
+
+TailwindShade picked = ColorCode.getNearest(allowed, userPickedColor);
+```
+
+`ColorCode.getNearest()` accepts any `Collection<T extends ColorCode>`, so the candidates can come
+from different palettes at once, or from an enum of your own.
+
+## Shades
+
+`Shade` is the step within a family, from `S50` up to `S950`. It carries both scales at once:
+`getTailwindStep()` returns 50 … 950, `getOpenColorStep()` returns 0 … 9 (`null` for `S950`, which
+Open Color has no counterpart for). One shade range therefore means the same thing in both palettes.
+
+```java
+Shade.lights();  // S50 … S400
+Shade.mids();    // S400 … S600 — the accent range
+Shade.darks();   // S600 … S950
+
+Shade.range(Shade.S200, Shade.S700);   // inclusive, always light to dark
+Shade.ofTailwindStep(600);             // S600
+Shade.ofOpenColorStep(6);              // S600
+Shade.S700.isDark();                   // true
+```
+
+## Random colors
+
+```java
+TailwindShade any = TailwindPalette.randomShade();               // anything, 50 to 950
+TailwindShade accent = TailwindPalette.randomShade(Shade.mids()); // usable as an accent
+TailwindShade blue = TailwindPalette.BLUE.random(Shade.darks());  // dark blue
+
+TailwindPalette family = TailwindPalette.randomFamily();
+Shade shade = Shade.random(Shade.lights());
+```
+
+Restricting the shade range is what makes random colors usable. A random pick across the full scale
+gives you `slate-50` as often as `red-600`, and the near-white end is useless for an avatar
+background while the 950 end is useless for a chart line. `Shade.mids()` keeps everything at a
+comparable strength, so a set of random colors looks like a set instead of an accident.
+
+Avatar colors, for instance, want to be stable per user rather than random on every request — hash
+the identifier and index into the palette:
+
+```java
+List<TailwindShade> pool = new ArrayList<>();
+for (TailwindPalette family : TailwindPalette.values()) {
+    pool.add(family.shade(Shade.S600));
+}
+
+TailwindShade color = pool.get(Math.floorMod(userId.hashCode(), pool.size()));
+String background = color.getHexCodeWithLeadingHash();
+String text = color.isBlackContrastingColor2() ? "#000000" : "#ffffff";
+```
+
+`ColorPalette` has its own two variants, since it has no shade structure:
+
+```java
+ColorPalette.getRandomValue();
+ColorPalette.getRandomValue(alreadyUsed);   // avoids everything in the collection
+```
+
+The second one returns `null` once the collection covers the whole palette, so a caller assigning
+colors to a growing list of items has to handle running out at 64.
+
+:::caution[getRandomValue(Collection) was broken before 1.0.0]
+Its loop condition was inverted: it only ever returned colors that were already in the collection,
+and looped forever on an empty one.
+:::
+
+## Every color in one list
+
+```java
+List<TailwindShade> all = TailwindPalette.all();          // 286
+List<OpenColorShade> allOc = OpenColorPalette.all();      // 130
+List<TailwindShade> reds = TailwindPalette.RED.allShades(); // 11, light to dark
+TailwindShade base = TailwindPalette.RED.base();            // red-500
+```
+
+`base()` is the 500 shade, the one Tailwind means when it says "red".

@@ -1,0 +1,50 @@
+---
+title: ColorPalette
+description: The 64 named colors of ColorPalette — a flat enum of memorable names, without a shade structure.
+---
+
+import FlatGrid from '../../../components/FlatGrid.astro';
+import { rocketbase } from '../../../data/rocketbase.js';
+
+`ColorPalette` is the palette the library started with: 64 named colors, from `BRICK` through to
+`WHITE`, with no shade scale underneath them. Names like `DUCK_EGG`, `FRENCH_VANILLA` and
+`SILVER_LINING` come from a fashion color card rather than a design system, which is exactly what
+makes it useful for labelling things — `TIFFANY` is a name a person can remember, `teal-300` is not.
+
+```java
+ColorPalette.BRICK.getHexCode();                // a54e3c
+ColorPalette.BRICK.getHexCodeWithLeadingHash(); // #a54e3c
+ColorPalette.BRICK.getValue();                  // brick
+ColorPalette.DUCK_EGG.getValue();               // duck-egg
+ColorPalette.BRICK.getRgbColor();               // RgbColor(165, 78, 60)
+ColorPalette.BRICK.isBlackContrastingColor();   // false → white text
+```
+
+`getValue()` is annotated with `@JsonValue`, so Jackson serializes the enum as `"duck-egg"` rather
+than `"DUCK_EGG"`, and the `@Schema(enumAsRef = true)` annotation makes it a named enum in a
+generated OpenAPI document instead of an inline list repeated at every usage.
+
+## Picking and matching
+
+```java
+ColorPalette nearest = ColorPalette.getNearest("#a04b3a"); // BRICK
+ColorPalette random = ColorPalette.getRandomValue();
+ColorPalette unused = ColorPalette.getRandomValue(alreadyAssigned);
+```
+
+`getNearest()` routes through `ColorCode.getNearest()` and therefore matches in OKLAB, the same as
+the other two palettes. Up to 0.6.x it compared rgb channels directly, so a few inputs land on a
+different constant after upgrading.
+
+`getRandomValue(Collection)` returns `null` once the collection covers all 64 entries, which a
+caller assigning colors to a growing list has to handle.
+
+## The colors
+
+Text on each tile is drawn in the color `isBlackContrastingColor2()` picks for that background.
+
+<FlatGrid colors={rocketbase} />
+
+## License
+
+Part of the library, MIT licensed.
