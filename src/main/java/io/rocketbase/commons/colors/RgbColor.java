@@ -97,6 +97,81 @@ public class RgbColor {
     }
 
     /**
+     * reads any of the supported notations - rgb(...), hsl(...), oklch(...) or a hex code
+     *
+     * @param colorCode color in one of the supported notations
+     * @return RgbColor or null when not valid format
+     */
+    public static RgbColor readColor(String colorCode) {
+        if (colorCode == null) {
+            return null;
+        }
+        String trimmed = colorCode.trim();
+        HslColor hsl = HslColor.readHsl(trimmed);
+        if (hsl != null) {
+            return hsl.toRgb();
+        }
+        OklchColor oklch = OklchColor.readOklch(trimmed);
+        if (oklch != null) {
+            return oklch.toRgb();
+        }
+        return readRgbOrHex(trimmed);
+    }
+
+    /**
+     * @return the same color converted to hsl
+     */
+    public HslColor toHsl() {
+        double rd = r / 255d, gd = g / 255d, bd = b / 255d;
+        double max = Math.max(rd, Math.max(gd, bd));
+        double min = Math.min(rd, Math.min(gd, bd));
+        double delta = max - min;
+        double lightness = (max + min) / 2d;
+
+        if (delta == 0) {
+            return new HslColor(0, 0, lightness);
+        }
+        double saturation = delta / (1 - Math.abs(2 * lightness - 1));
+        double hue;
+        if (max == rd) {
+            hue = 60 * (((gd - bd) / delta) % 6);
+        } else if (max == gd) {
+            hue = 60 * (((bd - rd) / delta) + 2);
+        } else {
+            hue = 60 * (((rd - gd) / delta) + 4);
+        }
+        return new HslColor(HslColor.normalizeHue(hue), saturation, lightness);
+    }
+
+    /**
+     * @return the same color converted to oklab
+     */
+    public OklabColor toOklab() {
+        double[] oklab = ColorSpaces.linearSrgbToOklab(
+                ColorSpaces.srgbToLinear(r / 255d),
+                ColorSpaces.srgbToLinear(g / 255d),
+                ColorSpaces.srgbToLinear(b / 255d));
+        return new OklabColor(oklab[0], oklab[1], oklab[2]);
+    }
+
+    /**
+     * @return the same color converted to oklch
+     */
+    public OklchColor toOklch() {
+        return toOklab().toOklch();
+    }
+
+    /**
+     * perceptual distance to another color - lower means more similar
+     *
+     * @param other color to compare with
+     * @return euclidean distance within the oklab space
+     */
+    public double distance(RgbColor other) {
+        return toOklab().distance(other.toOklab());
+    }
+
+    /**
      * @return hexCode of color without leading # for example ffffff
      */
     public String getHexCode() {
@@ -134,6 +209,11 @@ public class RgbColor {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public String toString() {
+        return getHexCodeWithLeadingHash();
     }
 
     private double gammaCorrect(int value) {

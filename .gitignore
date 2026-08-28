@@ -15,3 +15,8 @@ buildNumber.properties
 ### JetBrains template
 .idea
 *.iml
+
+### docs (astro/starlight)
+/docs/node_modules/
+/docs/dist/
+/docs/.astro/

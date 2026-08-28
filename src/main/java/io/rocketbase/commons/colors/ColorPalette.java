@@ -6,15 +6,13 @@ import lombok.Getter;
 
 import java.util.*;
 
-import static io.rocketbase.commons.colors.RgbColor.hex2rgb;
-
 /**
  * holds a list of color presets<br>
  * provides a function to transform from hex-color to rgb-color<br>
  * furthermore it allows to find a nearest fitting color to given hex-code
  */
 @Schema(description = "holds a list of color presets", enumAsRef = true)
-public enum ColorPalette {
+public enum ColorPalette implements ColorCode {
 
     BRICK("a54e3c"),
     POMEGRANTE("881f30"),
@@ -99,23 +97,8 @@ public enum ColorPalette {
      * @param hexCode sting of color could start with # or not...
      * @return when no problem @{@link ColorPalette}
      */
-    public static ColorPalette getNearest(String hexCode) {
-        RgbColor given = hex2rgb(hexCode);
-        if (given == null) {
-            return null;
-        }
-        List<Double> differenceArray = new ArrayList<>();
-        Arrays.asList(values())
-                .forEach(color -> {
-                    RgbColor c = color.getRgbColor();
-                    differenceArray.add(Math.sqrt((given.getR() - c.getR()) * (given.getR() - c.getR())
-                            + (given.getG() - c.getG()) * (given.getG() - c.getG())
-                            + (given.getB() - c.getB()) * (given.getB() - c.getB())));
-                });
-        Double min = Collections.min(differenceArray);
-        int index = differenceArray.indexOf(min);
-
-        return values()[index];
+    public static ColorPalette getNearest(String colorCode) {
+        return ColorCode.getNearest(Arrays.asList(values()), colorCode);
     }
 
     public static ColorPalette getRandomValue() {
@@ -131,29 +114,6 @@ public enum ColorPalette {
             newValue = getRandomValue();
         } while (existingCollection.contains(newValue));
         return newValue;
-    }
-
-    public RgbColor getRgbColor() {
-        return hex2rgb(this.getHexCode());
-    }
-
-    /**
-     * primar algorithm to calculate text color for background-color
-     *
-     * @return true text should be black - otherweise white
-     */
-    public boolean isBlackContrastingColor() {
-        return this.getRgbColor().isBlackContrastingColor();
-    }
-
-
-    /**
-     * different algorithm to calculate text color for background-color
-     *
-     * @return true text should be black - otherweise white
-     */
-    public boolean isBlackContrastingColor2() {
-        return this.getRgbColor().isBlackContrastingColor2();
     }
 
 }
