@@ -39,22 +39,26 @@ public class RgbColor {
         if (hexCode == null) {
             return null;
         }
-        String colour = new String(hexCode);
+        String colour = hexCode;
         if (colour.startsWith("#")) {
             colour = colour.substring(1);
         }
 
-        int r = 0, g = 0, b = 0;
+        int r, g, b;
 
-        if (colour.length() == 6) {
-            r = Integer.valueOf(colour.substring(0, 1), 16) * 17;
-            g = Integer.valueOf(colour.substring(2, 3), 16) * 17;
-            b = Integer.valueOf(colour.substring(4, 5), 16) * 17;
-        } else if (colour.length() == 3) {
-            r = Integer.valueOf(colour.substring(0, 1) + colour.substring(0, 1), 16);
-            g = Integer.valueOf(colour.substring(1, 2) + colour.substring(1, 2), 16);
-            b = Integer.valueOf(colour.substring(2, 3) + colour.substring(2, 3), 16);
-        } else {
+        try {
+            if (colour.length() == 6) {
+                r = Integer.parseInt(colour.substring(0, 2), 16);
+                g = Integer.parseInt(colour.substring(2, 4), 16);
+                b = Integer.parseInt(colour.substring(4, 6), 16);
+            } else if (colour.length() == 3) {
+                r = Integer.parseInt(colour.substring(0, 1) + colour.substring(0, 1), 16);
+                g = Integer.parseInt(colour.substring(1, 2) + colour.substring(1, 2), 16);
+                b = Integer.parseInt(colour.substring(2, 3) + colour.substring(2, 3), 16);
+            } else {
+                return null;
+            }
+        } catch (NumberFormatException e) {
             return null;
         }
 
@@ -96,17 +100,7 @@ public class RgbColor {
      * @return hexCode of color without leading # for example ffffff
      */
     public String getHexCode() {
-        String rHex = Integer.toHexString(r), gHex = Integer.toHexString(g), bHex = Integer.toHexString(b);
-        if (rHex.length() < 2) {
-            rHex += rHex;
-        }
-        if (gHex.length() < 2) {
-            gHex += gHex;
-        }
-        if (bHex.length() < 2) {
-            bHex += bHex;
-        }
-        return rHex + gHex + bHex;
+        return String.format("%02x%02x%02x", r, g, b);
     }
 
     /**

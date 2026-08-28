@@ -129,7 +129,7 @@ public enum ColorPalette {
         }
         do {
             newValue = getRandomValue();
-        } while (!existingCollection.contains(newValue));
+        } while (existingCollection.contains(newValue));
         return newValue;
     }
 
